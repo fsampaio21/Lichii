@@ -1357,6 +1357,14 @@ void PipelineCache::EvictUnusedPipelines() {
     if (device.IsMoltenVK()) {
         return;
     }
+    // EDEN_NX2_PRELOAD_ALL_PIPELINES=1 builds every cached pipeline at boot to keep them off the
+    // GPU thread, so none is evicted either. Ocarina of Time on an RTX 3070 Ti built 52,790 at
+    // boot, evicted 46,295 at frame 9000, then translated them again on the GPU thread as play
+    // reached them: up to 352 in 10 s (1.6 s of the GPU thread, frames of 170-370 ms). With all
+    // of them built the process peaked at 16.6 GB.
+    if (PreloadAllPipelines()) {
+        return;
+    }
     // Each built pipeline holds ~0.45 MB of driver memory and none was ever destroyed, so it grew
     // with every place a session went (title 1: 1,500 on its title screen alone). One unused for
     // this long is destroyed; it takes 2-3 ms to build again from the driver's pipeline cache.
